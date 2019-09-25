@@ -1,28 +1,33 @@
 const {
-    fromEvent,
     from,
-    timer,
+    timer
 } = rxjs;
 
 const {
-    map,
-    switchMap,
-    debounceTime,
-    distinctUntilChanged,
-    filter,
+    tap,
+    switchMap
 } = rxjs.operators;
 
 
-let results = document.getElementById('results');
+let result = document.getElementById('result');
+let httpStatus = document.getElementById('http-status');
 
-const source = timer(1000, 2000);
+addEventListener('click', () => {
+    controller.abort();
+    httpStatus.innerHTML = '';
+});
 
-const subscribe = source.subscribe(() =>
-    fetch(`/api`)
-        .then(
-            data =>
-                results.innerText = "Current time is " + data.json()
-        )
+const controller = new AbortController();
+const signal = controller.signal;
+const fetchData = () => fetch('/api', { signal }).then(data => data.text());
 
-);
+timer(0, 12000)
+    .pipe(
+        tap(() => httpStatus.innerHTML = 'http request pending ...'),
+        switchMap(() => from(fetchData()))
+        )   
+    .subscribe((data) => {
+        result.innerHTML = data;
+        httpStatus.innerHTML = '';
+    });
 

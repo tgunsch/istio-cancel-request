@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-cancel-request
+  labels:
+    app: istio-cancel-request
+    service: istio-cancel-request
+spec:
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: istio-cancel-request
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: istio-cancel-request
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: istio-cancel-request-v1
+  labels:
+    app: istio-cancel-request
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: istio-cancel-request
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: istio-cancel-request
+        version: v1
+    spec:
+      serviceAccountName: istio-cancel-request
+      containers:
+      - name: istio-cancel-request
+        image: istio-cancel-request:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080    

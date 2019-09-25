@@ -1,0 +1,55 @@
+# Configuration for logentry instances
+apiVersion: config.istio.io/v1alpha2
+kind: instance
+metadata:
+  name: errorlog
+  namespace: istio-system
+spec:
+  compiledTemplate: logentry
+  params:
+    severity: '"warning"'
+    timestamp: request.time
+    variables:
+      source: source.labels["app"] | source.workload.name | "unknown"
+      sourceIp: source.ip | ip("0.0.0.0")
+      forwardedFor: request.headers["x-forwarded-for"] | "unknown"
+      destination: destination.labels["app"] | destination.workload.name | "unknown"
+      requestPath: request.path | "/"
+      requestSize: request.size | 0
+      requestTotalSize: request.total_size | 0
+      responseCode: response.code | 0
+      responseSize: response.size | 0
+      responseTotalSize: response.total_size | 0
+      latency: response.duration | "0ms"
+      traceId: request.headers["x-b3-traceid"] | ""
+      spanId: request.headers["x-b3-spanid"] | ""
+      parentSpanId: request.headers["x-b3-parentspanid"] | ""
+      startTime: request.time
+      endTime: response.time
+    monitored_resource_type: '"UNSPECIFIED"'
+---
+# Configuration for a stdio handler
+apiVersion: config.istio.io/v1alpha2
+kind: handler
+metadata:
+  name: errorloghandler
+  namespace: istio-system
+spec:
+  compiledAdapter: stdio
+  params:
+    severity_levels:
+      warning: 1 # Params.Level.WARNING
+    outputAsJson: true
+---
+# Rule to send logentry instances to a stdio handler
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: errorlog
+  namespace: istio-system
+spec:
+  match: (context.protocol == "http" || context.protocol == "grpc") && (response.code >= 400)
+  actions:
+    - handler: errorloghandler
+      instances:
+        - errorlog
