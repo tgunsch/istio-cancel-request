@@ -1,33 +1,38 @@
 const {
+    fromEvent,
     from,
-    timer
 } = rxjs;
-
 const {
-    tap,
-    switchMap
+    map,
+    switchMap,
+    debounceTime,
+    distinctUntilChanged,
+    filter,
 } = rxjs.operators;
 
+let searchBox = document.getElementById('search');
+let results = document.getElementById('results');
 
-let result = document.getElementById('result');
-let httpStatus = document.getElementById('http-status');
+let search = (term) => {
+    return fetch(`/api?q=${term}`)
+        .then(data => data.text());
+};
 
-addEventListener('click', () => {
-    controller.abort();
-    httpStatus.innerHTML = '';
-});
-
-const controller = new AbortController();
-const signal = controller.signal;
-const fetchData = () => fetch('/api', { signal }).then(data => data.text());
-
-timer(0, 12000)
+let input$ = fromEvent(searchBox, 'input')
     .pipe(
-        tap(() => httpStatus.innerHTML = 'http request pending ...'),
-        switchMap(() => from(fetchData()))
-        )   
-    .subscribe((data) => {
-        result.innerHTML = data;
-        httpStatus.innerHTML = '';
-    });
+        debounceTime(100),
+        map(e => e.target.value),
+        filter(query => query.length >= 2 || query.length === 0),
+        distinctUntilChanged(),
+        switchMap(value => value ?
+            from(search(value)) :
+            from(Promise.resolve(""))
+        )
+    );
+
+let subscription = input$.subscribe(data => {
+    let newResult = document.createElement('li');
+    newResult.textContent = data;
+    results.appendChild(newResult);
+})
 
