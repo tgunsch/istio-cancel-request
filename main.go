@@ -12,9 +12,14 @@ import (
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Sleeping for 10 seconds...")
 	time.Sleep(time.Duration(10 * time.Second))
+	query, ok := r.URL.Query()["q"]
+	if !ok || len(query[0]) < 1 {
+		fmt.Println("No query param found")
+		return
+	}
 	f := time.Now().Format("Mon Jan _2 2006 15:04:05")
-	fmt.Printf("Finished, returning %v\n", f)
-	fmt.Fprintf(w, "%s", f)
+	fmt.Printf("Finished, returning %s for #%s \n", f, query[0])
+	fmt.Fprintf(w, "Response at %s for #%s", f, query[0])
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {

@@ -1,4 +1,5 @@
 const {
+    fromEvent,
     from,
     timer
 } = rxjs;
@@ -9,25 +10,68 @@ const {
 } = rxjs.operators;
 
 
-let result = document.getElementById('result');
-let httpStatus = document.getElementById('http-status');
+let result = document.getElementById('results');
+let startButton = document.getElementById('start');
+let cancelButtton = document.getElementById('cancel');
+let requestNumber = 0;
+let controller;
+let signal;
 
-addEventListener('click', () => {
-    controller.abort();
-    httpStatus.innerHTML = '';
+cancelButtton.disabled = true;
+
+const fetchData = (num) =>
+    fetch(`/api?q=${num}`, {signal})
+        .then(response => {
+            return response.text()
+        });
+
+
+startButton.addEventListener('click', () => {
+    requestNumber++;
+    logMessage("Start request #" + requestNumber + " at " + new Date() + " pending ...");
+    controller = new AbortController();
+    signal = controller.signal;
+    cancelButtton.disabled = false;
+    startButton.disabled = true;
+    fetchData(requestNumber)
+        .then((data) => {
+            logMessage("Received response: " + data);
+        })
+        .catch(err => {
+            if (err.name === 'AbortError') {
+                logMessage('Cancelled request #' + requestNumber + " " + new Date());
+            } else {
+                logMessage('Oops for request #' + requestNumber + " " + err);
+            }
+        })
+        .finally(() => {
+            startButton.disabled = false;
+            cancelButtton.disabled = true;
+        })
 });
 
-const controller = new AbortController();
-const signal = controller.signal;
-const fetchData = () => fetch('/api', { signal }).then(data => data.text());
 
-timer(0, 12000)
-    .pipe(
-        tap(() => httpStatus.innerHTML = 'http request pending ...'),
-        switchMap(() => from(fetchData()))
-        )   
-    .subscribe((data) => {
-        result.innerHTML = data;
-        httpStatus.innerHTML = '';
+// fromEvent(startButton, 'click')
+//     .pipe(
+//         tap(() => {
+//             requestNumber++;
+//             logMessage("Start request " + requestNumber + " at "  + new Date()  + " pending ...");
+//             controller = new AbortController();
+//             signal = controller.signal;
+//         }),
+//         switchMap(() => from(fetchData(requestNumber)))
+//     ).subscribe((data) => {
+//         logMessage("Received response: " + data);
+//     });
+
+
+fromEvent(cancelButtton, 'click')
+    .subscribe(() => {
+        controller.abort();
     });
 
+function logMessage(msg) {
+    let newResult = document.createElement('li');
+    newResult.textContent = msg;
+    result.appendChild(newResult);
+}
