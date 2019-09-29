@@ -12,7 +12,7 @@ import (
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Sleeping for 10 seconds...")
 	time.Sleep(time.Duration(10 * time.Second))
-	query, ok := r.URL.Query()["q"]
+	query, ok := r.URL.Query()["query"]
 	if !ok || len(query[0]) < 1 {
 		fmt.Println("No query param found")
 		return

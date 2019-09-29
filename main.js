@@ -20,7 +20,7 @@ let signal;
 cancelButtton.disabled = true;
 
 const fetchData = (num) =>
-    fetch(`/api?q=${num}`, {signal})
+    fetch(`/api?query=${num}`, {signal})
         .then(response => {
             return response.text()
         });
